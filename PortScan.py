@@ -9,6 +9,7 @@ import logging
 import requests
 import dns.resolver
 import urllib3
+import argparse
 from time import time
 from bs4 import BeautifulSoup
 from fake_useragent import UserAgent
@@ -21,10 +22,11 @@ urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 logger = logging.getLogger(__name__)
 
 class Scanner(object):
-	def __init__(self, target, start, end):
+	def __init__(self, target, start, end, threads=100):
 		self.target = target
 		self.start  = start
 		self.end    = end
+		self.threads = threads
 		self.W 	 	= '\033[0m'
 		self.G  	= '\033[1;32m'
 		self.O  	= '\033[1;33m'
@@ -121,7 +123,7 @@ class Scanner(object):
 				socket.gethostbyname(self.target), self.W))
 			print('-'*60)
 			#线程数
-			pool = ThreadPool(processes=100)
+			pool = ThreadPool(processes=self.threads)
 			#get传递超时时间，用于捕捉ctrl+c
 			pool.map_async(self.run, self.ports).get(0xffff)
 			pool.close()
@@ -129,9 +131,10 @@ class Scanner(object):
 			print('-'*60)
 			print(u'{}[-] 扫描完成耗时: {} 秒.{}'.format(self.O, 
 				time()-self.time, self.W))
-		except Exception as e:
-			print(e)
 		except KeyboardInterrupt:
+			# 修改键盘中断处理逻辑，确保程序可以快速结束
+			pool.terminate()
+			pool.join()
 			print(self.R + u'\n[-] 用户终止扫描...')
 			sys.exit(1)
 
@@ -151,22 +154,50 @@ class Scanner(object):
 				print(u'{}[-] 目标使用了CDN技术,停止扫描.{}'.format(self.R, self.W))
 				print('-'*60)
 
+def parse_args():
+	parser = argparse.ArgumentParser(description='TCP端口扫描工具')
+	parser.add_argument('-u', '--url', required=True, help='目标IP地址或域名')
+	parser.add_argument('-p', '--port', required=True, help='端口范围 (例如: 21-8080 或 80)')
+	parser.add_argument('-T', '--threads', type=int, default=100, help='线程数 (默认: 100)')
+	parser.add_argument('-v', '--version', action='version', version='%(prog)s 1.0')
+	return parser.parse_args()
+
+def parse_port_range(port_str):
+	"""解析端口范围字符串"""
+	if '-' in port_str:
+		start, end = port_str.split('-', 1)
+		return int(start), int(end)
+	else:
+		port = int(port_str)
+		return port, port
+
 if __name__ == '__main__':
 
 	banner = r'''
-    ____             __  _____
+	____             __  _____
    / __ \____  _____/ /_/ ___/_________ _____  ____  ___  _____
   / /_/ / __ \/ ___/ __/\__ \/ ___/ __ `/ __ \/ __ \/ _ \/ ___/
  / ____/ /_/ / /  / /_ ___/ / /__/ /_/ / / / / / / /  __/ /
 /_/    \____/_/   \__//____/\___/\__,_/_/ /_/_/ /_/\___/_/ 
-			                        
+									
 			'''
 	
 	print('\033[1;34m'+ banner +'\033[0m')
-	if len(sys.argv) != 4:
-		print('usage: python {} 1.2.3.4 21 8080'.format(sys.argv[0]))
-		sys.exit(0)
-	else:
-		myscan = Scanner(sys.argv[1],sys.argv[2],sys.argv[3])
-		myscan.check_target()
+	
+	# // 删除旧的使用方式，只保留命令行参数解析
+	try:
+		# // 解析命令行参数
+		args = parse_args()
 		
+		# // 解析端口范围
+		start_port, end_port = parse_port_range(args.port)
+		
+		# // 创建扫描器实例
+		myscan = Scanner(args.target, start_port, end_port, args.threads)
+		myscan.check_target()
+	except KeyboardInterrupt:
+		print("\nExit...")
+		sys.exit(0)
+	except Exception as e:
+		print("Error:", str(e))
+		sys.exit(1)
