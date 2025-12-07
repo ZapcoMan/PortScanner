@@ -13,15 +13,23 @@ TCP端口扫描工具，支持端口扫描、Banner识别和CDN检测功能。
 ## 使用方法
 
 ```bash
-python PortScan.py <目标地址> <起始端口> <结束端口>
+python PortScan.py -u <目标地址> -p <端口范围> [-T 线程数]
 ```
+
+参数说明：
+- `-u, --url`: 目标IP地址或域名
+- `-p, --port`: 端口范围，可以是单个端口(如: 80)或端口范围(如: 21-8080)
+- `-T, --threads`: 线程数，默认为100
+- `-v, --version`: 显示程序版本
+- `-h, --help`: 显示帮助信息
 
 示例：
 ```bash
-python PortScan.py 192.168.1.1 1 1000
-python PortScan.py example.com 21 8080
+python PortScan.py -u 192.168.1.1 -p 1-1000
+python PortScan.py -u example.com -p 21-8080
+python PortScan.py -u google.com -p 80
+python PortScan.py -u 192.168.1.1 -p 1-65535 -T 200
 ```
-
 
 ## 工作原理
 
