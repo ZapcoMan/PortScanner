@@ -18,7 +18,7 @@ PortScanner/
 ├── README.md            # 项目说明文档
 ├── LICENSE              # 许可证文件
 ├── requirements.txt     # 依赖包列表
-├── .gitignore          # Git忽略文件配置
+└── .gitignore          # Git忽略文件配置
 
 ```
 
