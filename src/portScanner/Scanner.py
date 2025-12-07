@@ -55,7 +55,24 @@ class Scanner(object):
 		finally:
 			return True if len(set(list(self.result))) > 1 else False
 
-	
+	def resolve_host(self, hostname):
+		"""使用指定的DNS服务器解析主机名"""
+		dnsserver = ['114.114.114.114', '8.8.8.8', '223.6.6.6']
+		try:
+			# 尝试使用指定的DNS服务器解析
+			for dns_ip in dnsserver:
+				myResolver = dns.resolver.Resolver()
+				myResolver.lifetime = myResolver.timeout = 2.0
+				myResolver.nameservers = [dns_ip]
+				try:
+					record = myResolver.resolve(hostname)
+					return str(record[0].address)
+				except:
+					continue
+			# 如果指定的DNS服务器都无法解析，则回退到系统默认
+			return socket.gethostbyname(hostname)
+		except:
+			return hostname  # 如果解析失败，直接返回原hostname
 
 	def scan_port(self, port):
 		# 端口扫描
@@ -120,8 +137,8 @@ class Scanner(object):
 	def _start(self):
 		try:
 			print('-'*60)
-			print(u'{}[-] 正在扫描地址: {}{} '.format(self.O,
-				socket.gethostbyname(self.url), self.W))
+			print(u'{}[-] 当前出网地址: {}{} '.format(self.O,
+				self.resolve_host(self.url), self.W))
 			print('-'*60)
 			# 线程数
 			pool = ThreadPool(processes=self.threads)
