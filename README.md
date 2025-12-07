@@ -18,13 +18,8 @@ PortScanner/
 ├── README.md            # 项目说明文档
 ├── LICENSE              # 许可证文件
 ├── requirements.txt     # 依赖包列表
-├── setup.py            # 安装配置文件
-├── setup.cfg           # 安装配置文件
-├── CHANGELOG.md        # 版本变更记录
 ├── .gitignore          # Git忽略文件配置
-└── docs/               # 文档目录
-    ├── index.md        # 详细使用文档
-    └── development.md  # 开发文档
+
 ```
 
 ## 安装依赖
