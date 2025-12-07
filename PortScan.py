@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python3
 #coding:utf-8
 #Author:se55i0n
 #目标tcp端口开放扫描及应用端口banner识别
@@ -8,17 +8,15 @@ import socket
 import logging
 import requests
 import dns.resolver
+import urllib3
 from time import time
 from bs4 import BeautifulSoup
 from fake_useragent import UserAgent
-from requests.packages.urllib3.exceptions import InsecureRequestWarning
 #线程池
 from multiprocessing.dummy import Pool as ThreadPool
 from multiprocessing.dummy import Lock
 
-reload(sys)
-sys.setdefaultencoding('utf-8')
-requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
+urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 logger = logging.getLogger(__name__)
 
@@ -38,7 +36,7 @@ class Scanner(object):
 		self.get_ports()
 
 	def get_ports(self):
-		for i in xrange(int(self.start), int(self.end)+1):
+		for i in range(int(self.start), int(self.end)+1):
 			self.ports.append(i)
 
 	def check_cdn(self):
@@ -49,7 +47,7 @@ class Scanner(object):
 		try:
 			for i in dnsserver:
 				myResolver.nameservers = i
-				record = myResolver.query(self.target)
+				record = myResolver.resolve(self.target)
 				self.result.append(record[0].address)
 		except Exception as e:
 			pass
@@ -96,45 +94,45 @@ class Scanner(object):
 				banner = self.get_http_banner('http://{}:{}'.format(self.target,port))
 				self.mutex.acquire()
 				if banner:					
-					print '{}[+] {} ---- open   {}{}'.format(self.G,
-						str(port).rjust(6), banner[:18], self.W)
+					print('{}[+] {} ---- open   {}{}'.format(self.G,
+						str(port).rjust(6), banner[:18], self.W))
 				else:
 					banner = self.get_http_banner('https://{}:{}'.format(
 						self.target, port))
 					if banner:
-						print '{}[+] {} ---- open   {}{}'.format(self.G,
-							str(port).rjust(6), banner[:18], self.W)
+						print('{}[+] {} ---- open   {}{}'.format(self.G,
+							str(port).rjust(6), banner[:18], self.W))
 					else:
 						banner = self.get_socket_info(port)
 						if banner:
-							print '{}[+] {} ---- open   {}{}'.format(
-								self.G, str(port).rjust(6), banner[:18], self.W)
+							print('{}[+] {} ---- open   {}{}'.format(
+								self.G, str(port).rjust(6), banner[:18], self.W))
 						else:
-							print '{}[+] {} ---- open   {}'.format(
-								self.G, str(port).rjust(6), self.W)
+							print('{}[+] {} ---- open   {}'.format(
+								self.G, str(port).rjust(6), self.W))
 				self.mutex.release()
 		except Exception as e:
 			pass
 
 	def _start(self):
 		try:
-			print '-'*60
-			print u'{}[-] 正在扫描地址: {}{} '.format(self.O, 
-				socket.gethostbyname(self.target), self.W)
-			print '-'*60
+			print('-'*60)
+			print(u'{}[-] 正在扫描地址: {}{} '.format(self.O, 
+				socket.gethostbyname(self.target), self.W))
+			print('-'*60)
 			#线程数
 			pool = ThreadPool(processes=100)
 			#get传递超时时间，用于捕捉ctrl+c
 			pool.map_async(self.run, self.ports).get(0xffff)
 			pool.close()
 			pool.join()
-			print '-'*60
-			print u'{}[-] 扫描完成耗时: {} 秒.{}'.format(self.O, 
-				time()-self.time, self.W)
+			print('-'*60)
+			print(u'{}[-] 扫描完成耗时: {} 秒.{}'.format(self.O, 
+				time()-self.time, self.W))
 		except Exception as e:
-			print e
+			print(e)
 		except KeyboardInterrupt:
-			print self.R + u'\n[-] 用户终止扫描...'
+			print(self.R + u'\n[-] 用户终止扫描...')
 			sys.exit(1)
 
 	def check_target(self):
@@ -149,13 +147,13 @@ class Scanner(object):
 			if not self.check_cdn():
 				self._start()
 			else:
-				print '-'*60	
-				print u'{}[-] 目标使用了CDN技术,停止扫描.{}'.format(self.R, self.W)
-				print '-'*60
+				print('-'*60)	
+				print(u'{}[-] 目标使用了CDN技术,停止扫描.{}'.format(self.R, self.W))
+				print('-'*60)
 
 if __name__ == '__main__':
 
-	banner = '''
+	banner = r'''
     ____             __  _____
    / __ \____  _____/ /_/ ___/_________ _____  ____  ___  _____
   / /_/ / __ \/ ___/ __/\__ \/ ___/ __ `/ __ \/ __ \/ _ \/ ___/
@@ -164,9 +162,9 @@ if __name__ == '__main__':
 			                        
 			'''
 	
-	print '\033[1;34m'+ banner +'\033[0m'
+	print('\033[1;34m'+ banner +'\033[0m')
 	if len(sys.argv) != 4:
-		print 'usage: python {} 1.2.3.4 21 8080'.format(sys.argv[0])
+		print('usage: python {} 1.2.3.4 21 8080'.format(sys.argv[0]))
 		sys.exit(0)
 	else:
 		myscan = Scanner(sys.argv[1],sys.argv[2],sys.argv[3])
