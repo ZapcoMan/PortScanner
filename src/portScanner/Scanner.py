@@ -8,10 +8,14 @@ import argparse
 from time import time
 from bs4 import BeautifulSoup
 from fake_useragent import UserAgent
-#线程池
+# 线程池
 from multiprocessing.dummy import Pool as ThreadPool
 from multiprocessing.dummy import Lock
 
+# 导入CDN绕过功能
+from .bypass_cdn import bypass_cdn
+
+urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 class Scanner(object):
 	def __init__(self, url, start, end, threads=100):
@@ -29,12 +33,15 @@ class Scanner(object):
 		self.mutex  = Lock()
 		self.get_ports()
 
+	# 绑定CDN绕过方法
+	bypass_cdn = bypass_cdn
+
 	def get_ports(self):
 		for i in range(int(self.start), int(self.end)+1):
 			self.ports.append(i)
 
 	def check_cdn(self):
-		#目标域名cdn检测
+		# 目标域名cdn检测
 		myResolver = dns.resolver.Resolver()
 		myResolver.lifetime = myResolver.timeout = 2.0
 		dnsserver = [['114.114.114.114'],['8.8.8.8'],['223.6.6.6']]
@@ -48,8 +55,10 @@ class Scanner(object):
 		finally:
 			return True if len(set(list(self.result))) > 1 else False
 
+	
+
 	def scan_port(self, port):
-		#端口扫描
+		# 端口扫描
 		try:
 			s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 			s.settimeout(0.2)
@@ -60,7 +69,7 @@ class Scanner(object):
 			s.close()
 
 	def get_http_banner(self, url):
-		#http/https请求获取banner
+		# http/https请求获取banner
 		try:
 			r = requests.get(url, headers={'UserAgent':UserAgent().random},
 				timeout=2, verify=False, allow_redirects=True)
@@ -70,7 +79,7 @@ class Scanner(object):
 			pass
 
 	def get_socket_info(self, port):
-		#socket获取banner
+		# socket获取banner
 		try:
 			s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 			s.settimeout(0.2)
@@ -112,11 +121,11 @@ class Scanner(object):
 		try:
 			print('-'*60)
 			print(u'{}[-] 正在扫描地址: {}{} '.format(self.O,
-                                                      socket.gethostbyname(self.url), self.W))
+				socket.gethostbyname(self.url), self.W))
 			print('-'*60)
-			#线程数
+			# 线程数
 			pool = ThreadPool(processes=self.threads)
-			#get传递超时时间，用于捕捉ctrl+c
+			# get传递超时时间，用于捕捉ctrl+c
 			pool.map_async(self.run, self.ports).get(0xffff)
 			pool.close()
 			pool.join()
@@ -131,17 +140,30 @@ class Scanner(object):
 			sys.exit(1)
 
 	def check_target(self):
-		#判断目标是域名还是还是ip地址
+		# 判断目标是域名还是还是ip地址
 		flag = self.url.split('.')[-1]
 		try:
-			#ip地址
+			# ip地址
 			if int(flag) >= 0:
 				self._start()
 		except:
-			#域名地址
+			# 域名地址
 			if not self.check_cdn():
 				self._start()
 			else:
 				print('-'*60)
-				print(u'{}[-] 目标使用了CDN技术,停止扫描.{}'.format(self.R, self.W))
+				print(u'{}[-] 目标使用了CDN技术,尝试绕过...{}'.format(self.R, self.W))
 				print('-'*60)
+				# 尝试绕过CDN
+				real_ips = self.bypass_cdn()
+				if real_ips:
+					print(u'{}[-] 发现 {} 个可能的真实IP，开始扫描...{}'.format(self.G, len(real_ips), self.W))
+					# 对发现的真实IP进行扫描
+					for ip in real_ips:
+						print(u'{}[-] 扫描IP: {}{}'.format(self.O, ip, self.W))
+						old_url = self.url
+						self.url = ip  # 临时替换为目标IP
+						self._start()
+						self.url = old_url  # 恢复原始URL
+				else:
+					print(u'{}[-] 未能绕过CDN，停止扫描.{}'.format(self.R, self.W))
