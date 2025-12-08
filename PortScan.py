@@ -19,7 +19,7 @@ from multiprocessing.dummy import Lock
 
 from src.portScanner.Scanner import Scanner
 # 导入banner
-from src.portScanner.banner import print_banner
+from src.portScanner.banner import print_banner,version
 
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
@@ -30,7 +30,7 @@ def parse_args():
 	parser.add_argument('-u', '--url', required=True, help='目标IP地址或域名')
 	parser.add_argument('-p', '--port', required=True, help='端口范围 (例如: 21-8080 或 80)')
 	parser.add_argument('-T', '--threads', type=int, default=100, help='线程数 (默认: 100)')
-	parser.add_argument('-v', '--version', action='version', version='%(prog)s 1.0')
+	parser.add_argument('-v', '--version', action='version', version=f'Version: {version}', help='显示版本信息并退出')
 	return parser.parse_args()
 
 def parse_port_range(port_str):
